@@ -8,4 +8,25 @@ services:
       - .:/app
     environment:
       - APP_ENV=local
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=talatrivia
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
     command: python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      - db
+
+  db:
+      image: postgres:15-alpine
+      ports:
+        - "5432:5432"
+      environment:
+        - POSTGRES_USER=postgres
+        - POSTGRES_PASSWORD=password
+        - POSTGRES_DB=talatrivia
+      volumes:
+        - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
