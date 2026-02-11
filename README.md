@@ -16,6 +16,14 @@
 
     The API will be available at [http://localhost:8000](http://localhost:8000).
 
+2. **Run migrations:**
+
+    Apply migration:
+
+    ```bash
+    docker-compose exec api alembic upgrade head
+    ```
+
 ## Testing
 
 Run tests with `pytest`:
