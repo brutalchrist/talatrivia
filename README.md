@@ -1,5 +1,5 @@
-
 # TalaTrivia API
+[![codecov](https://codecov.io/github/brutalchrist/talatrivia/graph/badge.svg?token=KB8AQ3WAQA)](https://codecov.io/github/brutalchrist/talatrivia)
 
 ## Prerequisites
 
