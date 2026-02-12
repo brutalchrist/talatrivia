@@ -63,6 +63,15 @@ class TriviaRepoSqlAlchemy:
         db_trivias = result.scalars().all()
         return [self._to_domain(db_trivia) for db_trivia in db_trivias]
 
+    async def get_all(self) -> List[DomainTrivia]:
+        result = await self.session.execute(
+            select(DBTrivia).options(
+                selectinload(DBTrivia.questions), selectinload(DBTrivia.users)
+            )
+        )
+        db_trivias = result.scalars().all()
+        return [self._to_domain(db_trivia) for db_trivia in db_trivias]
+
     @staticmethod
     def _to_domain(db_trivia: DBTrivia) -> DomainTrivia:
         return DomainTrivia(

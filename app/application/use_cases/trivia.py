@@ -39,3 +39,11 @@ class ListUserTrivias:
 
     async def execute(self, user_id: UUID) -> List[Trivia]:
         return await self.trivia_repo.get_by_user_id(user_id)
+
+
+class ListTrivias:
+    def __init__(self, trivia_repo: TriviaRepo):
+        self.trivia_repo = trivia_repo
+
+    async def execute(self) -> List[Trivia]:
+        return await self.trivia_repo.get_all()

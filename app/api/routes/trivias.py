@@ -5,7 +5,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 
 from app.api.schemas.trivia import TriviaCreate, TriviaResponse
-from app.application.use_cases.trivia import CreateTrivia, GetTrivia, ListUserTrivias
+from app.application.use_cases.trivia import (
+    CreateTrivia,
+    GetTrivia,
+    ListUserTrivias,
+    ListTrivias,
+)
 from app.domain.errors import InvalidTriviaComposition
 from app.infrastructure.db.session import get_db
 from app.infrastructure.repositories.trivia_repo import TriviaRepoSqlAlchemy
@@ -49,3 +54,9 @@ async def list_user_trivias(
 ):
     use_case = ListUserTrivias(trivia_repo)
     return await use_case.execute(user_id)
+
+
+@router.get("/trivias", response_model=List[TriviaResponse])
+async def list_trivias(trivia_repo: TriviaRepoSqlAlchemy = Depends(get_trivia_repo)):
+    use_case = ListTrivias(trivia_repo)
+    return await use_case.execute()

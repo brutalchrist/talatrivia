@@ -15,3 +15,7 @@ class TriviaRepo(Protocol):
     async def get_by_user_id(self, user_id: UUID) -> List[Trivia]:
         """Retrieves all trivias assigned to a user."""
         ...
+
+    async def get_all(self) -> List[Trivia]:
+        """Retrieves all trivias."""
+        ...
