@@ -1,12 +1,13 @@
 from fastapi import FastAPI
 
-from app.api.routes import health, users, questions
+from app.api.routes import health, users, questions, trivias
 
 app = FastAPI(title="TalaTrivia API")
 
 app.include_router(health.router)
 app.include_router(users.router)
 app.include_router(questions.router)
+app.include_router(trivias.router)
 
 if __name__ == "__main__":
     import uvicorn
