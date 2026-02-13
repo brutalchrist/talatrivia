@@ -47,7 +47,12 @@ def test_answer_question_with_next_question(mock_answer_question_use_case):
         ],
     )
 
-    mock_answer_question_use_case.execute.return_value = (next_question, None, False)
+    mock_answer_question_use_case.execute.return_value = (
+        next_question,
+        None,
+        False,
+        True,
+    )
 
     response = client.post(
         f"/users/{user_id}/trivias/{trivia_id}/questions/{question_id}/options/{option_id}"
@@ -62,9 +67,10 @@ def test_answer_question_with_next_question(mock_answer_question_use_case):
     assert data["options"][0]["option_id"] == str(next_question.options[0].id)
     assert (
         data["options"][0]["answer"]
-        == f"/users/{user_id}/trivias/{trivia_id}/questions/{next_question.id}/options/{next_question.options[0].id}"
+        == f"http://testserver/users/{user_id}/trivias/{trivia_id}/questions/{next_question.id}/options/{next_question.options[0].id}"
     )
     assert "answer" not in data
+    assert data["message"] == "¡Correcto! Vamos con la siguiente."
     mock_answer_question_use_case.execute.assert_called_once_with(
         user_id, trivia_id, question_id, option_id
     )
@@ -85,7 +91,7 @@ def test_answer_last_question(mock_answer_question_use_case):
 
     final_score = 5
 
-    mock_answer_question_use_case.execute.return_value = (None, final_score, True)
+    mock_answer_question_use_case.execute.return_value = (None, final_score, True, True)
 
     response = client.post(
         f"/users/{user_id}/trivias/{trivia_id}/questions/{question_id}/options/{option_id}"
@@ -96,6 +102,7 @@ def test_answer_last_question(mock_answer_question_use_case):
     assert data["finished"] is True
     assert data["score"] == final_score
     assert "question_id" not in data
+    assert data["message"] == f"Trivia finalizada. Tu puntaje final es {final_score}."
 
     app.dependency_overrides = {}
 
@@ -120,7 +127,10 @@ def test_answer_question_already_answered(mock_answer_question_use_case):
     )
 
     assert response.status_code == 400
-    assert response.json()["detail"] == "Question already answered"
+    assert (
+        response.json()["detail"]
+        == "Esa pregunta ya fue respondida. Responde la siguiente."
+    )
 
     app.dependency_overrides = {}
 

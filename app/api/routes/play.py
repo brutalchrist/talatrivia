@@ -1,6 +1,6 @@
 from typing import Union
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 
@@ -24,7 +24,6 @@ async def get_play_trivia_use_case(db: AsyncSession = Depends(get_db)):
     question_repo = QuestionRepoSqlAlchemy(db)
     return PlayTrivia(participation_repo, trivia_repo, question_repo)
 
-
 async def get_answer_question_use_case(db: AsyncSession = Depends(get_db)):
     answer_repo = AnswerRepoSqlAlchemy(db)
     participation_repo = ParticipationRepoSqlAlchemy(db)
@@ -32,34 +31,55 @@ async def get_answer_question_use_case(db: AsyncSession = Depends(get_db)):
     trivia_repo = TriviaRepoSqlAlchemy(db)
     return AnswerQuestion(answer_repo, participation_repo, question_repo, trivia_repo)
 
-
 @router.get(
     "/users/{user_id}/trivias/{trivia_id}/play", response_model=PlayQuestionResponse
 )
 async def play_trivia(
+    request: Request,
     user_id: UUID,
     trivia_id: UUID,
     use_case: PlayTrivia = Depends(get_play_trivia_use_case),
 ):
     try:
-        question, participation_id = await use_case.execute(user_id, trivia_id)
+        question, participation_id, trivia_name, is_new, final_score = (
+            await use_case.execute(user_id, trivia_id)
+        )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
+    if final_score is not None:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Esta trivia ya fue finalizada. Tu puntaje final es {final_score}.",
+        )
+
     if not question:
         raise HTTPException(status_code=404, detail="No questions available")
+
+    if is_new:
+        message = f"Comencemos con la trivia: {trivia_name}. Aquí va tu primera pregunta"
+    else:
+        message = "Continuemos con la trivia"
 
     options = [
         PlayQuestionOption(
             option_id=opt.id,
             text=opt.text,
-            answer=f"/users/{user_id}/trivias/{trivia_id}/questions/{question.id}/options/{opt.id}",
+            answer=str(
+                request.url_for(
+                    "answer_question",
+                    user_id=user_id,
+                    trivia_id=trivia_id,
+                    question_id=question.id,
+                    option_id=opt.id,
+                )
+            ),
         )
         for opt in question.options
     ]
 
     return PlayQuestionResponse(
-        question_id=question.id, text=question.text, options=options
+        question_id=question.id, text=question.text, options=options, message=message
     )
 
 
@@ -68,6 +88,7 @@ async def play_trivia(
     response_model=Union[AnswerNextQuestionResponse, AnswerFinishedResponse],
 )
 async def answer_question(
+    request: Request,
     user_id: UUID,
     trivia_id: UUID,
     question_id: UUID,
@@ -75,20 +96,43 @@ async def answer_question(
     use_case: AnswerQuestion = Depends(get_answer_question_use_case),
 ):
     try:
-        next_question, final_score, is_finished = await use_case.execute(
+        next_question, final_score, is_finished, is_correct = await use_case.execute(
             user_id, trivia_id, question_id, option_id
         )
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        error_msg = str(e)
+        if error_msg == "Question already answered":
+            message = "Esa pregunta ya fue respondida. Responde la siguiente."
+            raise HTTPException(
+                status_code=400,
+                detail="Esa pregunta ya fue respondida. Responde la siguiente.",
+            )
+        raise HTTPException(status_code=400, detail=error_msg)
 
     if is_finished:
-        return AnswerFinishedResponse(finished=True, score=final_score)
+        message = f"Trivia finalizada. Tu puntaje final es {final_score}."
+        return AnswerFinishedResponse(
+            finished=True, score=final_score, message=message
+        )
+
+    if is_correct:
+        message = "¡Correcto! Vamos con la siguiente."
+    else:
+        message = "Incorrecto. Sigamos con la siguiente."
 
     options = [
         {
             "option_id": str(opt.id),
             "text": opt.text,
-            "answer": f"/users/{user_id}/trivias/{trivia_id}/questions/{next_question.id}/options/{opt.id}",
+            "answer": str(
+                request.url_for(
+                    "answer_question",
+                    user_id=user_id,
+                    trivia_id=trivia_id,
+                    question_id=next_question.id,
+                    option_id=opt.id,
+                )
+            ),
         }
         for opt in next_question.options
     ]
@@ -98,4 +142,5 @@ async def answer_question(
         question_id=next_question.id,
         text=next_question.text,
         options=options,
+        message=message,
     )

@@ -22,16 +22,18 @@ class PlayTrivia:
 
     async def execute(
         self, user_id: UUID, trivia_id: UUID
-    ) -> tuple[Optional[Question], UUID]:
+    ) -> tuple[Optional[Question], UUID, str, bool, Optional[int]]:
         participation = await self.participation_repo.get_by_trivia_and_user(
             trivia_id, user_id
         )
 
-        if not participation:
-            trivia = await self.trivia_repo.get_by_id(trivia_id)
-            if not trivia:
-                raise ValueError("Trivia not found")
+        trivia = await self.trivia_repo.get_by_id(trivia_id)
+        if not trivia:
+            raise ValueError("Trivia not found")
 
+        is_new = False
+        if not participation:
+            is_new = True
             participation = Participation(
                 id=uuid4(),
                 trivia_id=trivia_id,
@@ -43,10 +45,13 @@ class PlayTrivia:
             )
             participation = await self.participation_repo.save(participation)
 
-        trivia = await self.trivia_repo.get_by_id(trivia_id)
-        if not trivia or not trivia.question_ids:
-            return None, participation.id
+        if participation.status == ParticipationStatus.FINISHED:
+            return None, participation.id, trivia.name, False, participation.score_total
+
+        if not trivia.question_ids:
+            return None, participation.id, trivia.name, is_new, None
+
         first_question_id = trivia.question_ids[0]
         question = await self.question_repo.get_by_id(first_question_id)
 
-        return question, participation.id
+        return question, participation.id, trivia.name, is_new, None

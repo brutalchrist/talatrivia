@@ -31,13 +31,7 @@ class AnswerQuestion:
         trivia_id: UUID,
         question_id: UUID,
         option_id: UUID,
-    ) -> tuple[Optional[Question], Optional[int], bool]:
-        """
-        Answers a question and returns:
-        - Next question (if any)
-        - Final score (if trivia finished)
-        - Whether trivia is finished
-        """
+    ) -> tuple[Optional[Question], Optional[int], bool, bool]:
         participation = await self.participation_repo.get_by_trivia_and_user(
             trivia_id, user_id
         )
@@ -97,8 +91,8 @@ class AnswerQuestion:
         if next_question_id:
             await self.participation_repo.update(participation)
             next_question = await self.question_repo.get_by_id(next_question_id)
-            return next_question, None, False
+            return next_question, None, False, is_correct
         else:
             participation.finish(datetime.now())
             await self.participation_repo.update(participation)
-            return None, participation.score_total, True
+            return None, participation.score_total, True, is_correct

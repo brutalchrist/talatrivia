@@ -7,6 +7,7 @@ class PlayQuestionOption(BaseModel):
     answer: str
 
 class PlayQuestionResponse(BaseModel):
+    message: str
     question_id: UUID
     text: str
     options: list[PlayQuestionOption]

@@ -46,7 +46,13 @@ def test_play_trivia_first_time(mock_play_trivia_use_case):
         ],
     )
 
-    mock_play_trivia_use_case.execute.return_value = (question, participation_id)
+    mock_play_trivia_use_case.execute.return_value = (
+        question,
+        participation_id,
+        "Python Quiz",
+        True,
+        None,
+    )
 
     response = client.get(f"/users/{user_id}/trivias/{trivia_id}/play")
 
@@ -59,11 +65,12 @@ def test_play_trivia_first_time(mock_play_trivia_use_case):
     assert data["options"][0]["text"] == "A programming language"
     assert (
         data["options"][0]["answer"]
-        == f"/users/{user_id}/trivias/{trivia_id}/questions/{question.id}/options/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+        == f"http://testserver/users/{user_id}/trivias/{trivia_id}/questions/{question.id}/options/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
     )
     assert "difficulty" not in data
     assert "is_correct" not in data["options"][0]
     assert "answer" not in data
+    assert data["message"] == "Comencemos con la trivia: Python Quiz. Aquí va tu primera pregunta"
 
     mock_play_trivia_use_case.execute.assert_called_once_with(user_id, trivia_id)
 
@@ -98,7 +105,13 @@ def test_play_trivia_in_progress(mock_play_trivia_use_case):
         ],
     )
 
-    mock_play_trivia_use_case.execute.return_value = (question, participation_id)
+    mock_play_trivia_use_case.execute.return_value = (
+        question,
+        participation_id,
+        "JavaScript Quiz",
+        False,
+        None,
+    )
 
     response = client.get(f"/users/{user_id}/trivias/{trivia_id}/play")
 
@@ -106,6 +119,7 @@ def test_play_trivia_in_progress(mock_play_trivia_use_case):
     data = response.json()
     assert data["question_id"] == str(question.id)
     assert data["text"] == "What is FastAPI?"
+    assert data["message"] == "Continuemos con la trivia"
 
     app.dependency_overrides = {}
 
@@ -138,7 +152,13 @@ def test_play_trivia_no_questions(mock_play_trivia_use_case):
     trivia_id = UUID("12345678-1234-5678-1234-567812345678")
     participation_id = UUID("99999999-9999-9999-9999-999999999999")
 
-    mock_play_trivia_use_case.execute.return_value = (None, participation_id)
+    mock_play_trivia_use_case.execute.return_value = (
+        None,
+        participation_id,
+        "Empty Quiz",
+        False,
+        None,
+    )
 
     response = client.get(f"/users/{user_id}/trivias/{trivia_id}/play")
 
