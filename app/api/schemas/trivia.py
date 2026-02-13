@@ -1,5 +1,6 @@
 from uuid import UUID
 from typing import Optional
+from datetime import datetime
 
 from pydantic import BaseModel
 
@@ -19,3 +20,15 @@ class TriviaResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class RankingEntry(BaseModel):
+    user_id: UUID
+    user_name: str
+    score: int
+    finished_at: Optional[datetime] = None
+
+
+class RankingResponse(BaseModel):
+    trivia_id: UUID
+    ranking: list[RankingEntry]

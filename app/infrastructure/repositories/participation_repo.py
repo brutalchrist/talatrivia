@@ -7,7 +7,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 
 from app.domain.entities.participation import Participation as DomainParticipation
-from app.infrastructure.db.models import Participation as DBParticipation
+from app.infrastructure.db.models import (
+    Participation as DBParticipation,
+    User as DBUser,
+)
 
 class ParticipationRepoSqlAlchemy:
     def __init__(self, session: AsyncSession):
@@ -66,6 +69,23 @@ class ParticipationRepoSqlAlchemy:
 
         await self.session.refresh(db_participation)
         return self._to_domain(db_participation)
+
+    async def get_ranking(self, trivia_id: UUID) -> list[dict]:
+        result = await self.session.execute(
+            select(
+                DBUser.id.label("user_id"),
+                DBUser.name.label("user_name"),
+                DBParticipation.score_total.label("score"),
+                DBParticipation.finished_at.label("finished_at"),
+            )
+            .join(DBParticipation, DBUser.id == DBParticipation.user_id)
+            .where(DBParticipation.trivia_id == trivia_id)
+            .order_by(
+                DBParticipation.score_total.desc(),
+                DBParticipation.finished_at.asc().nullslast(),
+            )
+        )
+        return [dict(row._mapping) for row in result.all()]
 
     @staticmethod
     def _to_domain(db_participation: DBParticipation) -> DomainParticipation:

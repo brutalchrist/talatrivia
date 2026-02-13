@@ -19,3 +19,7 @@ class ParticipationRepo(Protocol):
     async def update(self, participation: Participation) -> Participation:
         """Updates an existing participation."""
         ...
+
+    async def get_ranking(self, trivia_id: UUID) -> list[dict]:
+        """Retrieves the ranking for a trivia."""
+        ...
