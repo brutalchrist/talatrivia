@@ -23,25 +23,3 @@
     ```bash
     docker-compose exec api alembic upgrade head
     ```
-
-## Testing
-
-Run tests with `pytest`:
-
-```bash
-python -m pytest
-```
-
-## Linting & Formatting
-
-Run `ruff` for linting:
-
-```bash
-ruff check .
-```
-
-Run `black` for formatting:
-
-```bash
-black .
-```
