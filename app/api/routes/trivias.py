@@ -4,21 +4,29 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 
-from app.api.schemas.trivia import TriviaCreate, TriviaResponse
+from app.api.schemas.trivia import TriviaCreate, TriviaResponse, RankingResponse
 from app.application.use_cases.trivia import (
     CreateTrivia,
     GetTrivia,
     ListUserTrivias,
     ListTrivias,
+    GetTriviaRanking,
 )
 from app.domain.errors import InvalidTriviaComposition
 from app.infrastructure.db.session import get_db
 from app.infrastructure.repositories.trivia_repo import TriviaRepoSqlAlchemy
+from app.infrastructure.repositories.participation_repo import (
+    ParticipationRepoSqlAlchemy,
+)
 
 router = APIRouter()
 
 async def get_trivia_repo(db: AsyncSession = Depends(get_db)):
     return TriviaRepoSqlAlchemy(db)
+
+
+async def get_participation_repo(db: AsyncSession = Depends(get_db)):
+    return ParticipationRepoSqlAlchemy(db)
 
 @router.post("/trivias", response_model=TriviaResponse)
 async def create_trivia(
@@ -60,3 +68,13 @@ async def list_user_trivias(
 async def list_trivias(trivia_repo: TriviaRepoSqlAlchemy = Depends(get_trivia_repo)):
     use_case = ListTrivias(trivia_repo)
     return await use_case.execute()
+
+
+@router.get("/trivias/{trivia_id}/ranking", response_model=RankingResponse)
+async def get_trivia_ranking(
+    trivia_id: UUID,
+    participation_repo: ParticipationRepoSqlAlchemy = Depends(get_participation_repo),
+):
+    use_case = GetTriviaRanking(participation_repo)
+    ranking = await use_case.execute(trivia_id)
+    return RankingResponse(trivia_id=trivia_id, ranking=ranking)

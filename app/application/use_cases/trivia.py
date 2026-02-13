@@ -3,6 +3,7 @@ from uuid import uuid4, UUID
 
 from app.domain.entities.trivia import Trivia
 from app.application.ports.trivia_repo import TriviaRepo
+from app.application.ports.participation_repo import ParticipationRepo
 
 class CreateTrivia:
     def __init__(self, trivia_repo: TriviaRepo):
@@ -47,3 +48,11 @@ class ListTrivias:
 
     async def execute(self) -> List[Trivia]:
         return await self.trivia_repo.get_all()
+
+
+class GetTriviaRanking:
+    def __init__(self, participation_repo: ParticipationRepo):
+        self.participation_repo = participation_repo
+
+    async def execute(self, trivia_id: UUID) -> list[dict]:
+        return await self.participation_repo.get_ranking(trivia_id)
