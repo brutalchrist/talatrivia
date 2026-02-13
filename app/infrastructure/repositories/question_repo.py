@@ -1,4 +1,5 @@
-from typing import List
+from typing import List, Optional
+from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -43,6 +44,15 @@ class QuestionRepoSqlAlchemy:
         )
         db_questions = result.scalars().all()
         return [self._to_domain(db_question) for db_question in db_questions]
+
+    async def get_by_id(self, question_id: UUID) -> Optional[DomainQuestion]:
+        result = await self.session.execute(
+            select(DBQuestion)
+            .options(selectinload(DBQuestion.options))
+            .where(DBQuestion.id == question_id)
+        )
+        db_question = result.scalar_one_or_none()
+        return self._to_domain(db_question) if db_question else None
 
     @staticmethod
     def _to_domain(db_question: DBQuestion) -> DomainQuestion:
